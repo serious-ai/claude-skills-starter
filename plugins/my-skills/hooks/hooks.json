@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {"hooks": [{"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/nudges.py\"", "timeout": 10}]}
+    ],
+    "PreToolUse": [
+      {"matcher": "mcp__.*__(create_draft|update_draft|reply|send_message|forward)|mcp__.*__COMPOSIO_MULTI_EXECUTE_TOOL",
+       "hooks": [{"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/voice_check.py\"", "timeout": 30}]},
+      {"matcher": "Write",
+       "hooks": [{"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/nudges.py\"", "timeout": 10}]}
+    ],
+    "PostToolUse": [
+      {"matcher": "Write|Edit|MultiEdit|mcp__.*__notion-create-pages|mcp__.*__notion-update-page",
+       "hooks": [{"type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/voice_check.py\"", "timeout": 30}]}
+    ]
+  }
+}

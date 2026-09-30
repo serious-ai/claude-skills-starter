@@ -1,0 +1,11 @@
+# Phrases that read as machine-written. Add your own.
+extends: existence
+message: "Say the thing directly in place of '%s'."
+level: error
+ignorecase: true
+tokens:
+  - here's the thing
+  - at the end of the day
+  - let that sink in
+  - without further ado
+  - buckle up

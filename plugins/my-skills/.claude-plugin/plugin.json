@@ -1,0 +1,7 @@
+{
+  "name": "my-skills",
+  "version": "1.0.0",
+  "description": "My skills and the checks that enforce them. Replace this with your own description.",
+  "author": {"name": "Your Name"},
+  "license": "MIT"
+}

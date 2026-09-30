@@ -1,0 +1,10 @@
+# Hype words with a plainer replacement. Warnings, because context decides.
+extends: substitution
+message: "Prefer '%s' (or the specific fact) over '%s'."
+level: warning
+ignorecase: true
+swap:
+  utiliz(?:e|es|ed|ing): use
+  robust: strong
+  game.changer: the specific result
+  revolutionary: the specific difference

@@ -1,0 +1,9 @@
+{
+  "name": "my-skills",
+  "owner": {"name": "Your Name"},
+  "description": "My Claude skills. One source of truth for Claude Code, claude.ai and Cowork.",
+  "plugins": [
+    {"name": "my-skills", "source": "./plugins/my-skills",
+     "description": "My skills and the checks that enforce them."}
+  ]
+}

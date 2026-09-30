@@ -1,0 +1,13 @@
+{
+  "prompt_rules": [
+    {"skill": "house-voice", "action": "Load it before drafting",
+     "pattern": "\\b(draft|write|rewrite|reply|tighten|polish)\\b[^.?!]{0,50}?\\b(email|note|message|reply|post|bio|copy|page|letter|newsletter)\\b|\\bin my voice\\b"},
+    {"skill": "build-check", "action": "Search for an existing tool or library before writing new code",
+     "pattern": "\\b(build|write|create|set ?up|automate)\\b[^.?!]{0,60}?\\b(tool|script|scraper|pipeline|integration|bot|automation|service|app|plugin|cli|parser|dashboard|hook|skill)s?\\b"}
+  ],
+  "before_new_code": {
+    "skill": "build-check",
+    "min_lines": 80,
+    "action": "Search for an existing project, library or skill that already does this (2-3 searches) and say the result in one line."
+  }
+}

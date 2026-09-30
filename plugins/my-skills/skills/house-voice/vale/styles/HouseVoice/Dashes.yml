@@ -1,0 +1,9 @@
+# Example: a house style that writes without em and en dashes. Delete this file if yours uses them.
+extends: existence
+message: "Use a comma, period, parentheses or an ellipsis in place of '%s'."
+level: error
+nonword: true
+scope: ~heading
+tokens:
+  - '—'
+  - '–'
