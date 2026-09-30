@@ -1,0 +1,15 @@
+{
+  "name": "acme-skills",
+  "owner": {"name": "Acme Co"},
+  "description": "Acme's Claude skills: company-wide plus one plugin per team.",
+  "plugins": [
+    {"name": "company", "source": "./plugins/company",
+     "description": "Everyone: house voice, build check, company glossary."},
+    {"name": "sales", "source": "./plugins/sales",
+     "description": "Sales team skills."},
+    {"name": "ops", "source": "./plugins/ops",
+     "description": "Operations team skills."},
+    {"name": "finance", "source": {"source": "url", "url": "https://github.com/acme/claude-skills-finance.git"},
+     "description": "Finance team skills, in their own private repo so only finance can install them."}
+  ]
+}

@@ -1,0 +1,7 @@
+# Who must approve changes to each plugin. Pair with branch protection on main
+# (Settings, Branches, require a pull request review from Code Owners).
+/plugins/company/   @acme/ai-leads
+/plugins/sales/     @acme/sales-leads
+/plugins/ops/       @acme/ops-leads
+/.claude-plugin/    @acme/ai-leads
+/.githooks/         @acme/ai-leads

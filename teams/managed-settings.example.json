@@ -1,0 +1,11 @@
+{
+  "extraKnownMarketplaces": {
+    "acme-skills": {"source": {"source": "github", "repo": "acme/claude-skills"}}
+  },
+  "enabledPlugins": {
+    "company@acme-skills": true
+  },
+  "strictKnownMarketplaces": [
+    {"source": "github", "repo": "acme/claude-skills"}
+  ]
+}

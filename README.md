@@ -26,6 +26,10 @@ Built by [Serious AI](https://seriousai.partners) from the setup we run ourselve
 8. **Clean up:** delete your old uploaded copies under Customize, Skills, "Created by you", and any local copies in `~/.claude/skills`. Install first, delete second.
 9. **Optional auto-sync:** add `scripts/autosync.sh` as a Claude Code Stop hook (instructions at the top of the script).
 
+## For a team or company
+
+[`teams/`](teams/) has the same setup for Claude Team and Enterprise: one company repo, a plugin per team, separate repos for skills only one team may see, required reviewers per team folder, and how admins roll it out.
+
 ## The traps, and the fix for each
 
 1. **Installs don't update unless the version moves.** The pre-commit hook bumps it for you.
