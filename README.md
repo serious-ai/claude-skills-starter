@@ -26,6 +26,17 @@ Built by [Serious AI](https://seriousai.partners) from the setup we run ourselve
 8. **Clean up:** delete your old uploaded copies under Customize, Skills, "Created by you", and any local copies in `~/.claude/skills`. Install first, delete second.
 9. **Optional auto-sync:** add `scripts/autosync.sh` as a Claude Code Stop hook (instructions at the top of the script).
 
+## Adding a skill someone sent you
+
+Once your skills live here, **a skill only enters through the repo.** Clicking "install" on a downloaded skill in the Claude desktop app creates an upload on your account that runs alongside the plugin copy, so every skill shows twice until you delete one.
+
+1. **Read every file first.** A skill is instructions plus sometimes scripts. A downloaded one can carry commands or prompt instructions you didn't ask for. If it runs code, sends data anywhere or tells the model to ignore its rules, find out why before it goes in. (Asking Claude Code to "add this skill and review it first" works well.)
+2. **Keep its license** and add a `SOURCE.md` with where it came from, the version or commit, and the date.
+3. **Drop the folder into** `plugins/<plugin>/skills/<skill-name>/`, in the plugin whose people use it. A big third-party library gets its own plugin so it can be switched off.
+4. **Validate and commit.** The version bumps itself, the push happens on its own, and every surface picks it up on its next sync.
+
+A skill built in a claude.ai chat lands as an upload too. Copy it into the repo the same way, then delete the upload once the plugin version shows up.
+
 ## For a team or company
 
 [`teams/`](teams/) has the same setup for Claude Team and Enterprise: one company repo, a plugin per team, separate repos for skills only one team may see, required reviewers per team folder, and how admins roll it out.

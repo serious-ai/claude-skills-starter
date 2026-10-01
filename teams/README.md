@@ -28,6 +28,8 @@ GitHub permissions are per repo, not per folder. Anyone who can read the company
 
 Copy `.github/CODEOWNERS`, then turn on branch protection for `main` with "require review from Code Owners". A change to the sales plugin then needs a sales lead's approval before it reaches anyone. That review is the check that keeps a shared skill from drifting or quietly breaking for a whole team.
 
+The same goes for a skill someone finds or downloads: it arrives as a pull request into the right team's plugin, gets read file by file and approved by that plugin's owner, and only then reaches anyone. Nobody installs skills through the desktop app's install button, which would put an unreviewed copy on one person's account.
+
 ## Rolling it out
 
 **Claude Code (confirmed in Anthropic's docs):** an admin can register the marketplace and switch plugins on for the whole organization through managed settings, under Organization settings, Claude Code, Managed settings, or through a `managed-settings.json` file deployed to machines. `managed-settings.example.json` here registers the company marketplace, turns on the `company` plugin for everyone, and allows only that marketplace. Managed settings apply to the whole organization. For team-specific defaults, deploy a different managed settings file to each team's machines, or let each member install their team's plugin themselves.
