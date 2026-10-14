@@ -4,6 +4,18 @@ One GitHub repo for every Claude skill you write. Claude Code, claude.ai and Cow
 
 Built by [Serious AI](https://seriousai.partners) from the setup we run ourselves: 63 skills in six plugins, one repo. On the day we consolidated, twelve of our skills had edits that had never reached claude.ai, and nothing showed it until we compared every copy. This template is the setup, minus our skills.
 
+## The easy way: let Claude set it up
+
+Open Claude Code in a terminal and paste:
+
+```
+Set up my Claude skills repo from github.com/serious-ai/claude-skills-starter. Read its SETUP.md first and follow it step by step.
+```
+
+Claude checks your tools, makes your own private copy, brings in the skills you already have, and saves them to GitHub. For the two steps it isn't allowed to do itself (installing plugins into Claude Code, and the clicks in the desktop app), it gives you the exact command or click, one at a time. Plan on roughly an hour, most of it gathering the skills you already have.
+
+The rest of this page is the manual route and the reference.
+
 ## What you get
 
 - **A plugin marketplace skeleton:** `.claude-plugin/marketplace.json` and one plugin, `plugins/my-skills/`, with two working example skills:
