@@ -1,6 +1,6 @@
 # Claude skills starter
 
-One GitHub repo for every Claude skill you write. Claude Code, claude.ai and Cowork all install from it and update themselves when you push, so there are no more `.skill` uploads and no more copies drifting apart.
+One GitHub repo for every Claude skill you write. Claude Code, claude.ai and Cowork all install from it and update themselves whenever a change lands on `main`, so there are no more `.skill` uploads and no more copies drifting apart.
 
 Built by [Serious AI](https://seriousai.partners) from the setup we run ourselves: 63 skills in six plugins, one repo. On the day we consolidated, twelve of our skills had edits that had never reached claude.ai, and nothing showed it until we compared every copy. This template is the setup, minus our skills.
 
@@ -9,7 +9,8 @@ Built by [Serious AI](https://seriousai.partners) from the setup we run ourselve
 - **A plugin marketplace skeleton:** `.claude-plugin/marketplace.json` and one plugin, `plugins/my-skills/`, with two working example skills:
   - `house-voice`: a writing voice, with its mechanical rules enforced by a check rather than remembered
   - `build-check`: search for an existing tool before building a new one
-- **Versions that bump themselves.** Installed plugins only update when the version moves. The pre-commit hook raises the patch version of every plugin that changed and validates the manifests. The post-commit hook pushes.
+- **Versions that bump themselves.** Installed plugins only update when the version moves. The pre-commit hook raises the patch version of every plugin that changed and validates the manifests.
+- **Every commit reaches every surface.** claude.ai and Cowork re-sync a marketplace only when a pull request merges into `main`, never on a plain push. The post-commit hook pushes each commit to its own `sync/` branch, opens a pull request and merges it, in the background.
 - **Rules that hold every run.** The `house-voice` skill ships a [Vale](https://vale.sh) style (a free, open-source prose linter). A hook in the plugin blocks outbound email drafts that break the rules, and flags them in files and Notion pages.
 - **Skills that fire when they should.** A skill's description only fires when the model happens to match it. `hooks/nudges.json` maps prompt patterns to the skill that should run, and holds the first new 80+ line code file of each session until `build-check` has run.
 - **End-of-turn auto-sync.** `scripts/autosync.sh` commits and pushes any uncommitted change after every Claude turn, for this repo and for your scheduled routines if you put them in git too.
@@ -17,10 +18,10 @@ Built by [Serious AI](https://seriousai.partners) from the setup we run ourselve
 ## Quick start
 
 1. **Use this template** (the green button on GitHub) to make your own copy. Keep it private if your skills hold anything you wouldn't publish.
-2. Clone it, then turn on the git hooks: `git config core.hooksPath .githooks`.
+2. Clone it, then turn on the git hooks: `git config core.hooksPath .githooks`. The post-commit hook uses the GitHub CLI, so install it and sign in once: `brew install gh`, then `gh auth login`.
 3. Rename `my-skills` in `.claude-plugin/marketplace.json` and `plugins/my-skills/.claude-plugin/plugin.json` to your own name, and put your skills in `plugins/my-skills/skills/<skill-name>/SKILL.md`. Add more plugins as folders under `plugins/` to group skills you'll want to switch off together.
 4. Install Vale for the voice check: `brew install vale` (or see vale.sh for other platforms). Edit the rules in `plugins/my-skills/skills/house-voice/vale/styles/HouseVoice/`.
-5. Validate and push: `claude plugin validate .` and `claude plugin validate plugins/my-skills`, then commit (the hooks bump the version and push).
+5. Validate and commit: `claude plugin validate .` and `claude plugin validate plugins/my-skills`, then commit on `main`. The hooks bump the version and land the commit through a merged pull request. If `git status -sb` ever shows "ahead" or "behind", read `.git/last-push.log`.
 6. **Claude Code:** `claude plugin marketplace add <you>/<repo>`, then `claude plugin install my-skills@my-skills`. Turn on auto-update with `/plugin`, Marketplaces, your marketplace, Enable auto-update (interactive terminal).
 7. **claude.ai, desktop chat and Cowork:** in the desktop app, open a **Chat** conversation (not the Code tab), then Customize, Plugins, Add marketplace, `<you>/<repo>`. Connect GitHub if the repo is private. Then open **Discover** and install your plugins.
 8. **Clean up:** delete your old uploaded copies under Customize, Skills, "Created by you", and any local copies in `~/.claude/skills`. Install first, delete second.
@@ -33,7 +34,7 @@ Once your skills live here, **a skill only enters through the repo.** Clicking "
 1. **Read every file first.** A skill is instructions plus sometimes scripts. A downloaded one can carry commands or prompt instructions you didn't ask for. If it runs code, sends data anywhere or tells the model to ignore its rules, find out why before it goes in. (Asking Claude Code to "add this skill and review it first" works well.)
 2. **Keep its license** and add a `SOURCE.md` with where it came from, the version or commit, and the date.
 3. **Drop the folder into** `plugins/<plugin>/skills/<skill-name>/`, in the plugin whose people use it. A big third-party library gets its own plugin so it can be switched off.
-4. **Validate and commit.** The version bumps itself, the push happens on its own, and every surface picks it up on its next sync.
+4. **Validate and commit.** The version bumps itself, the merge happens on its own, and every surface picks it up on its next sync.
 
 A skill built in a claude.ai chat lands as an upload too. Copy it into the repo the same way, then delete the upload once the plugin version shows up.
 
@@ -53,13 +54,14 @@ A skill built in a claude.ai chat lands as an upload too. Copy it into the repo 
 8. **Claude Code's safety check stops Claude from rewiring its own skill folders and settings.** Run the install commands yourself.
 9. **Old uploads keep running alongside the plugins** until you delete them.
 10. **Every installed skill's description loads on every turn.** Keep a large third-party library in its own plugin so you can switch it off.
+11. **claude.ai and Cowork only re-sync when a pull request merges into `main`.** A direct push never reaches them. We found it after eight direct pushes left the desktop app two days behind. The post-commit hook lands every commit through a merged pull request, so never push straight to `main`.
 
 ## Layout
 
 ```
 .claude-plugin/marketplace.json      the marketplace: lists your plugins
 .githooks/pre-commit                 bumps changed plugins' versions, validates
-.githooks/post-commit                pushes main in the background
+.githooks/post-commit                lands each commit on main through a merged pull request
 scripts/autosync.sh                  optional Stop hook: commit and push after every Claude turn
 plugins/my-skills/
   .claude-plugin/plugin.json         name, version, description

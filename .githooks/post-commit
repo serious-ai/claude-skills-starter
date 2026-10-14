@@ -1,7 +1,27 @@
 #!/bin/sh
-# Push main in the background so every surface (Claude Code, claude.ai, Cowork) can pull it.
-# Read .git/last-push.log if `git status -sb` ever shows "ahead".
+# Land each commit on main through a merged pull request, in the background, so every surface pulls it.
+# claude.ai and Cowork re-sync this marketplace only when a PR merges into main. A direct push never
+# reaches them (found October 6, 2026, after eight direct pushes left the desktop copy two days stale).
+# So the commit goes up on its own sync/ branch, gets a PR, and merges, and local main moves onto the
+# merge commit. Read .git/last-push.log if `git status -sb` ever shows "ahead" or "behind".
 cd "$(git rev-parse --show-toplevel)" || exit 0
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
-( git push -q origin main > .git/last-push.log 2>&1 && date '+pushed %Y-%m-%d %H:%M:%S' >> .git/last-push.log ) &
+GH=$(command -v gh || echo /opt/homebrew/bin/gh)
+REPO=$(git remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
+SHA=$(git rev-parse HEAD)
+B="sync/$(git rev-parse --short HEAD)"
+TITLE=$(git log -1 --format=%s | cut -c1-120)
+(
+  git push -q origin "$SHA:refs/heads/$B" &&
+  URL=$("$GH" pr create -R "$REPO" --base main --head "$B" --title "$TITLE" \
+        --body "Merged by .githooks/post-commit so claude.ai and Cowork re-sync the marketplace.") &&
+  "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch &&
+  git fetch -q origin main ||
+  { echo "sync FAILED $(date '+%Y-%m-%d %H:%M:%S'): $SHA (branch $B may still be on GitHub)"; exit 1; }
+  # Fast-forward local main onto the merge commit when nothing else changed upstream (same tree).
+  [ "$(git rev-parse HEAD)" = "$SHA" ] &&
+    [ "$(git rev-parse 'origin/main^{tree}')" = "$(git rev-parse "$SHA^{tree}")" ] &&
+    git update-ref refs/heads/main origin/main "$SHA"
+  echo "merged $URL $(date '+%Y-%m-%d %H:%M:%S')"
+) > .git/last-push.log 2>&1 &
 exit 0

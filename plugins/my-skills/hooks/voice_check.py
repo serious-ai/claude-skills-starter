@@ -4,6 +4,7 @@
 Wired by this plugin's hooks/hooks.json:
   PreToolUse  email draft/send tools (Composio Gmail, Gmail connector) -> exit 2 blocks until clean
   PostToolUse Write/Edit/MultiEdit on .md/.html/.txt, Notion page writes -> reports hits back to Claude
+              (an Edit or MultiEdit on .html lints the whole landed file, so Vale's parser skips <style>/<script>)
 
 The rules live with the voice skill (skills/house-voice/vale/ in this plugin). Judgment rules stay in the
 skill's SKILL.md. Skips: email subjects, headings and code (Vale scopes), any text or file containing
@@ -92,12 +93,15 @@ def file_texts(name, tool_input):
     if not path.endswith(PROSE_EXT) or any(s in path for s in SKIP_PATHS) or path.endswith("MEMORY.md"):
         return path, []
     try:
-        if OFF in open(path, encoding="utf-8", errors="ignore").read():
-            return path, []
+        full = open(path, encoding="utf-8", errors="ignore").read()
     except OSError:
-        pass
+        full = ""
+    if OFF in full:
+        return path, []
     if name == "Write":
         return path, [tool_input.get("content", "")]
+    if path.endswith(".html"):  # a fragment loses its <style>/<script> context; the edit has landed, so lint the file
+        return path, [full]
     if name == "Edit":
         return path, [tool_input.get("new_string", "")]
     return path, [e.get("new_string", "") for e in tool_input.get("edits", [])]
