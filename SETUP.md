@@ -14,10 +14,12 @@ Check that `git`, `gh` (the GitHub command-line tool) and `claude` are installed
 Then ask three questions in one message, each with your suggestion:
 
 1. **Repo name?** Suggest `claude-skills`.
-2. **Private or public?** Suggest private, since skills often hold client names and house methods.
+2. **Private or public?** Suggest private, since skills often hold client names and house methods. Say the trade-off: a private repo needs GitHub connected to their Claude account in Step 6, and a public one doesn't.
 3. **Plugin name?** That's the label the skills install under. Suggest their first name or company name, lowercase with dashes.
 
-Done when the three tools work and the three answers are in.
+Also ask which Claude account they'll use on claude.ai, so Step 6 lands in the right one, and whether they already keep their skills in a GitHub repo. If they do, skip Steps 1 and 2 and check that repo has the template's `.githooks/` folder and `.claude-plugin/marketplace.json` instead.
+
+Done when the three tools work and every answer is in.
 
 ## 1. Make their copy
 
@@ -27,9 +29,9 @@ Done when the folder exists and `git config core.hooksPath` prints `.githooks`.
 
 ## 2. Make it theirs
 
-Rename `my-skills` to their plugin name in `.claude-plugin/marketplace.json` (both the marketplace `name` and the plugin `name` and `source`), in `plugins/my-skills/.claude-plugin/plugin.json`, and the folder itself (`git mv plugins/my-skills plugins/<name>`). Put their name in the `owner` and `author` fields. Point `REPOS` in `scripts/autosync.sh` at the new folder.
+Rename `my-skills` to their plugin name in `.claude-plugin/marketplace.json` (both the marketplace `name` and the plugin `name` and `source`), in `plugins/my-skills/.claude-plugin/plugin.json`, in the README's install commands, and the folder itself (`git mv plugins/my-skills plugins/<name>`). Put their name in the `owner` and `author` fields. Set `REPOS` at the top of `scripts/autosync.sh` to the new folder.
 
-Done when `grep -r my-skills .` (outside `.git`) only finds README mentions.
+Done when `grep -r my-skills . --exclude-dir=.git` only finds mentions in README.md's examples and in this file.
 
 ## 3. Bring in their skills
 
@@ -50,24 +52,24 @@ Done when the log says `merged` and `git status -sb` shows nothing ahead or behi
 
 ## 5. Install it in Claude Code (they do it)
 
-Give them these commands to paste into their own terminal:
+Give them these two commands. Tell them to type each one into this Claude Code prompt with a `!` at the very front, which runs it as a command instead of sending it to you as a message. (Pasting it into a separate Terminal window works too.)
 
 ```
-claude plugin marketplace add <github-user>/<repo>
-claude plugin install <name>@<name>
+! claude plugin marketplace add <github-user>/<repo>
+! claude plugin install <name>@<name>
 ```
 
 Then have them type `/plugin` in Claude Code, open Marketplaces, choose theirs and turn on auto-update.
 
-Done when `claude plugin list` shows their plugin.
+Done when `claude plugin list` shows their plugin. Its skills load from the next Claude Code session on, so tell them to start a new one to see them.
 
 ## 6. Install it on claude.ai and Cowork (they do it)
 
-Coach these clicks one at a time:
+Coach these clicks one at a time, in the Claude account they named in Step 0. The browser and the desktop app work the same way:
 
-1. In the Claude desktop app, open a **Chat** conversation. The Code tab's Customize screen is the local install, so the marketplace has to be added from Chat.
-2. Customize, then Plugins, then Add marketplace. Enter `<github-user>/<repo>`. If the repo is private, connect GitHub when asked.
-3. Adding a marketplace installs nothing yet. Open **Discover** and install their plugin.
+1. **In a browser:** open https://claude.ai/customize/plugins. **In the desktop app:** open a **Chat** conversation, then Customize, then Plugins. Don't use the desktop app's Code tab: its Customize screen is the local install, not the account.
+2. Add marketplace, then add it from a repository, and enter `<github-user>/<repo>`. If the repo is private, connect the GitHub account that owns it when asked, and allow access to that one repo only.
+3. Adding a marketplace installs nothing yet. Find their plugin in the list of plugins to add and install it.
 
 Done when they can see the plugin under Plugins with its skills listed.
 
@@ -79,7 +81,7 @@ Done when each skill appears once.
 
 ## 8. Optional: save automatically after every turn
 
-Offer to add `scripts/autosync.sh` as a Claude Code Stop hook (the instructions are at the top of the script). With it, any edit Claude makes to a skill is saved and sent up without anyone typing a commit. Add it only on their yes.
+Offer to add `scripts/autosync.sh` as a Claude Code Stop hook (the instructions are at the top of the script). With it, any edit Claude makes to a skill is saved and sent up without anyone typing a commit. Add it only on their yes. Check `REPOS` at the top of the script lists only folders they want synced. The routines line ships commented out, and stays that way unless they ask for it.
 
 ## Finish
 
