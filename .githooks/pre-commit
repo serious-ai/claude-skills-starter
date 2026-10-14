@@ -6,7 +6,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 0
 for PLUG in $(git diff --cached --name-only | sed -n 's#^plugins/\([^/]*\)/.*#\1#p' | sort -u); do
   PJ="plugins/$PLUG/.claude-plugin/plugin.json"
   [ -f "$PJ" ] || continue
-  git diff --cached --name-only | grep -qx "$PJ" && [ -n "$(git diff --cached -- "$PJ" | grep '"version"')" ] && continue
+  git diff --cached --name-only | grep -qx "$PJ" && [ -n "$(git diff --cached -U0 -- "$PJ" | grep '^[-+].*"version"')" ] && continue
   python3 - "$PJ" <<'PY'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p))
