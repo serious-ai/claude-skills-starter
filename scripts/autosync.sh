@@ -6,13 +6,20 @@
 #   "hooks": {"Stop": [{"hooks": [{"type": "command",
 #       "command": "sh /path/to/this/repo/scripts/autosync.sh", "async": true, "timeout": 20}]}]}
 #
-# List your repos here. Add "push" for a repo without its own post-commit push
-# (for example ~/.claude/scheduled-tasks turned into a repo with `git init`).
-REPOS="$HOME/Developer/claude-skills-starter
-$HOME/.claude/scheduled-tasks push"
+# List your repos here, one per line: your skills repo first. Add "push" after a repo that has no
+# post-commit hook of its own, for example ~/.claude/scheduled-tasks once you've turned it into a repo
+# with `git init`. That line ships commented out, so the script never touches your routines unless
+# you add them on purpose.
+REPOS="$HOME/Developer/YOUR-SKILLS-REPO"
+# REPOS="$REPOS
+# $HOME/.claude/scheduled-tasks push"
 
 LOG="$HOME/.claude/hooks/state/auto-sync.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null
+case "$REPOS" in *YOUR-SKILLS-REPO*)
+  echo "$(date '+%F %T') autosync.sh: set REPOS to your skills repo folder, nothing synced" >>"$LOG"
+  echo "autosync.sh: edit REPOS at the top of this script first" >&2; exit 1;;
+esac
 echo "$REPOS" | while read -r DIR MODE; do
   [ -d "$DIR/.git" ] || continue
   cd "$DIR" || continue
