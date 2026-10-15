@@ -22,7 +22,7 @@ GitHub permissions are per repo, not per folder. Anyone who can read the company
 
 - **Skills anyone in the company may see** go in the company repo.
 - **Skills only one team may see** go in that team's own private repo, listed in the company marketplace with a `url` source (see `finance` in the example). Members without access to that repo can't install it, because each person's install clones with their own GitHub credentials.
-- Everyone who installs needs GitHub read access to the repos they install from.
+- Everyone who installs through Claude Code or their own claude.ai account needs GitHub read access to the repos they install from. Plugins an Owner syncs into the organization (see Rolling it out) reach members without it.
 
 ## Who can change what
 
@@ -34,7 +34,9 @@ The same goes for a skill someone finds or downloads: it arrives as a pull reque
 
 **Claude Code (confirmed in Anthropic's docs):** an admin can register the marketplace and switch plugins on for the whole organization through managed settings, under Organization settings, Claude Code, Managed settings, or through a `managed-settings.json` file deployed to machines. `managed-settings.example.json` here registers the company marketplace, turns on the `company` plugin for everyone, and allows only that marketplace. Managed settings apply to the whole organization. For team-specific defaults, deploy a different managed settings file to each team's machines, or let each member install their team's plugin themselves.
 
-**claude.ai, desktop chat and Cowork:** each member adds the marketplace from a Chat conversation (Customize, Plugins, Add marketplace), then installs `company` and their team's plugin from Discover. Whether an admin can push plugins to these surfaces for the whole organization varies by plan and was not confirmed in the docs as of September 30, 2026. Check your admin console.
+**claude.ai, desktop chat and Cowork (confirmed in Anthropic's docs, October 15, 2026):** an Owner on a Team or Enterprise plan adds the company repo under Organization settings, Plugins & skills, Add, Sync from GitHub (or Sync from GitLab). Members then receive the plugins without needing access to the repository themselves. Turn on Sync automatically and every merge to `main` reaches members, which makes the code-owner review above the one gate a change passes. Then set each plugin's Default access: Not available, Available to install, Installed by default, or Required (members can't turn a required plugin off). On Enterprise, Group access gives a plugin its own setting per user group, so the sales plugin can install for the sales group only. Team plans have no group setting: install `company` for everyone and let members install their team's plugin from Discover. The Policy tab can also switch off member-created skills and set publishing to Requires review, so nothing reaches the organization without an approval. Guide: https://claude.com/docs/plugins/admin
+
+**Which skills people actually use:** the Inventory tab's Users (30d) column shows how many people used each plugin and skill in the last 30 days. Sort by Most users to find the skills nobody runs, and retire them. Every installed skill's description costs context on every turn, and once the listing passes its budget (1% of the context window) Claude Code drops descriptions starting with the least-used skills, which removes the keywords Claude needs to match a request. A sprawling library loses exactly the skills people call rarely. Details: https://code.claude.com/docs/en/skills (Skill descriptions are cut short).
 
 ## Routines
 
