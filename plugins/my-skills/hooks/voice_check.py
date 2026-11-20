@@ -2,7 +2,8 @@
 """Run the house voice's mechanical rules (Vale, HouseVoice style) on text Claude writes.
 
 Wired by this plugin's hooks/hooks.json:
-  PreToolUse  email draft/send tools (Composio Gmail, Gmail connector) -> exit 2 blocks until clean
+  PreToolUse  email draft/send tools (Composio Gmail, Gmail connector) -> exit 2 blocks until clean,
+              and blocks a body that links a claude.ai artifact (private to its owner)
   PostToolUse Write/Edit/MultiEdit on .md/.html/.txt, Notion page writes -> reports hits back to Claude
               (an Edit or MultiEdit on .html lints the whole landed file, so Vale's parser skips <style>/<script>)
 
@@ -28,13 +29,20 @@ SKIP_PATHS = ("/node_modules/", "/.git/", "/private/tmp/", "/tmp/", "/vale/style
 STATE = os.path.expanduser("~/.claude/hooks/state")
 
 
-def voice_loaded(transcript):
+def skill_loaded(transcript, skill):
     try:
         with open(transcript, encoding="utf-8", errors="ignore") as f:
-            return any(VOICE_SKILL in l and ('"Skill"' in l or "Base directory for this skill" in l)
-                       for l in f)
+            return any(skill in l and ('"Skill"' in l or "Base directory for this skill" in l) for l in f)
     except (OSError, TypeError):
         return False
+
+
+def voice_loaded(transcript):
+    return skill_loaded(transcript, VOICE_SKILL)
+
+
+# A claude.ai artifact link is private to the account that made it, so an email recipient can't open it.
+ARTIFACT_LINK = re.compile(r"claude\.ai/(?:code/)?artifact/", re.I)
 
 
 def lint(text, ext):
@@ -128,6 +136,11 @@ def main():
                 print("Voice gate: " + VOICE_SKILL + " has not loaded this session. Load it with the Skill tool, "
                       "apply its judgment rules to this email, then resend the same call.", file=sys.stderr)
                 sys.exit(2)
+        if any(ARTIFACT_LINK.search(b) for b in bodies):
+            print("Email gate: the body links a claude.ai artifact, which the recipient can't open. Link a public "
+                  "copy of the page in anchor text, or leave the link out of a follow-up when an earlier email in "
+                  "the thread already carries it.", file=sys.stderr)
+            sys.exit(2)
         for body in bodies:
             e, w = lint(body, ext_for(body))
             errs += e
