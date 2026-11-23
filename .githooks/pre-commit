@@ -39,9 +39,6 @@ for HD in $(git diff --cached --name-only | sed -n 's#^\(plugins/[^/]*/hooks\)/.
       exit 1; }
   done
 done
-# If this repo keeps a public twin, say when a commit changes a file the twin should also get.
-# A warning, never a block: unattended auto-sync commits must still land.
-[ -f scripts/template-drift.py ] && python3 scripts/template-drift.py --staged
 # A dollar sign before a digit in a SKILL.md ("$5M") can load as an argument placeholder ($0, $1, ...)
 # and swap the number out when the skill runs. Warn on newly added lines only.
 HITS=$(git diff --cached -U0 -- '*SKILL.md' | grep -E '^\+[^+].*\$[0-9]')
