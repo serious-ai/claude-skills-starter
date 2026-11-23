@@ -24,9 +24,9 @@ TITLE=$(git log -1 --format=%s | cut -c1-120)
   git push -q origin "$SHA:refs/heads/$B" &&
   URL=$("$GH" pr create -R "$REPO" --base main --head "$B" --title "$TITLE" \
         --body "Merged by .githooks/post-commit so claude.ai and Cowork re-sync the marketplace.") &&
-  # Merge only once the GitHub check (.github/workflows/checks.yml) passes. A private repo on the free
-  # plan can't require a check, so this wait is where it holds (November 23, 2026). A red or
-  # missing check leaves the PR open and lands here as a sync FAILED line and a Mac notification.
+  # Merge only once the GitHub check (.github/workflows/checks.yml) passes (November 23, 2026). Branch
+  # protection on main also requires it where the plan allows. A red or missing check leaves the PR
+  # open and lands here as a sync FAILED line and a Mac notification.
   { i=0; until "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q . && \
       ! "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q "no checks reported" || [ $i -ge 12 ]; do
       sleep 5; i=$((i + 1)); done; } &&
