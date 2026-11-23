@@ -25,6 +25,7 @@ The rest of this page is the manual route and the reference.
 - **Every commit reaches every surface.** claude.ai and Cowork re-sync a marketplace only when a pull request merges into `main`, never on a plain push. The post-commit hook pushes each commit to its own `sync/` branch, opens a pull request and merges it, in the background.
 - **Rules that hold every run.** The `house-voice` skill ships a [Vale](https://vale.sh) style (a free, open-source prose linter). A hook in the plugin blocks outbound email drafts that break the rules, and flags them in files and Notion pages.
 - **Skills that fire when they should.** A skill's description only fires when the model happens to match it. `hooks/nudges.json` maps prompt patterns to the skill that should run, and holds the first new 80+ line code file of each session until `build-check` has run.
+- **Python that survives Homebrew upgrades.** Homebrew moves `python3` to a new version with none of your packages, and can leave broken package folders that make `pip` fail. `hooks/python_deps_check.py` runs at every session start, installs anything in `hooks/python_deps.json` that won't import, and repairs those folders. It stays silent when nothing is missing.
 - **End-of-turn auto-sync.** `scripts/autosync.sh` commits and pushes any uncommitted change after every Claude turn, for this repo and for your scheduled routines if you put them in git too.
 
 ## Quick start
