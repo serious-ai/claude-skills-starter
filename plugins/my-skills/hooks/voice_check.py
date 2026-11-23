@@ -3,7 +3,7 @@
 
 Wired by this plugin's hooks/hooks.json:
   PreToolUse  email draft/send tools (Composio Gmail, Gmail connector) -> exit 2 blocks until clean,
-              and blocks a body that links a claude.ai artifact (private to its owner)
+              and blocks a body that shows a bare claude.ai artifact URL (anchor text only)
   PostToolUse Write/Edit/MultiEdit on .md/.html/.txt, Notion page writes -> reports hits back to Claude
               (an Edit or MultiEdit on .html lints the whole landed file, so Vale's parser skips <style>/<script>)
 
@@ -41,8 +41,18 @@ def voice_loaded(transcript):
     return skill_loaded(transcript, VOICE_SKILL)
 
 
-# A claude.ai artifact link is private to the account that made it, so an email recipient can't open it.
+# A claude.ai artifact link sits in anchor text, never as a bare URL the recipient sees. Share the artifact
+# first so the recipient can open it. An <a href> to an artifact with ordinary anchor text passes.
 ARTIFACT_LINK = re.compile(r"claude\.ai/(?:code/)?artifact/", re.I)
+ANCHOR = re.compile(r"<a\b[^>]*>(.*?)</a\s*>", re.I | re.S)
+TAG = re.compile(r"<[^>]*>")
+
+
+def bare_artifact_link(body):
+    """True when a claude.ai artifact URL shows as visible text: raw in the body, or as an anchor's own text."""
+    if any(ARTIFACT_LINK.search(TAG.sub("", m.group(1))) for m in ANCHOR.finditer(body)):
+        return True
+    return bool(ARTIFACT_LINK.search(TAG.sub(" ", ANCHOR.sub(" ", body))))
 
 
 def lint(text, ext):
@@ -136,10 +146,10 @@ def main():
                 print("Voice gate: " + VOICE_SKILL + " has not loaded this session. Load it with the Skill tool, "
                       "apply its judgment rules to this email, then resend the same call.", file=sys.stderr)
                 sys.exit(2)
-        if any(ARTIFACT_LINK.search(b) for b in bodies):
-            print("Email gate: the body links a claude.ai artifact, which the recipient can't open. Link a public "
-                  "copy of the page in anchor text, or leave the link out of a follow-up when an earlier email in "
-                  "the thread already carries it.", file=sys.stderr)
+        if any(bare_artifact_link(b) for b in bodies):
+            print("Email gate: the body shows a bare claude.ai artifact URL. Embed it in anchor text "
+                  "(<a href=\"...\">the walkthrough</a>), shared so the recipient can open it, or leave the link "
+                  "out of a follow-up when an earlier email in the thread already carries it.", file=sys.stderr)
             sys.exit(2)
         for body in bodies:
             e, w = lint(body, ext_for(body))
