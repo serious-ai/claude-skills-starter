@@ -1,0 +1,8 @@
+{
+  "_why": "Third-party packages your skills and scheduled tasks import with the default python3, as module name: pip name. python_deps_check.py installs any that are missing at session start. Add one when a script starts importing it.",
+  "_example": {
+    "PIL": "pillow",
+    "requests": "requests"
+  },
+  "modules": {}
+}
