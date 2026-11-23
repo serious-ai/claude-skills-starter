@@ -1,0 +1,48 @@
+# The same checks .githooks/pre-commit runs on your computer, run on GitHub for every pull request,
+# so a change made in a cloud or claude.ai session gets them too (November 23, 2026). The
+# post-commit merges a sync PR only once this passes. Vale isn't installed here, so voice tests
+# that need it skip and run locally instead.
+name: checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate the marketplace and every plugin
+        run: |
+          npm install -g @anthropic-ai/claude-code >/dev/null
+          for T in . plugins/*; do claude plugin validate "$T"; done
+      - name: Hook tests
+        # Some hook tests drive zsh, the macOS default shell.
+        run: |
+          command -v zsh >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq zsh >/dev/null; }
+          for T in plugins/*/hooks/test_*.py; do [ -f "$T" ] || continue; echo "== $T"; python3 -I "$T"; done
+      - name: Each changed plugin moved its version
+        # claude.ai and Cowork only pull a plugin whose version moved. The pre-commit bumps it on the
+        # computer that commits, and a PR from anywhere else has to do the same.
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          FAIL=0
+          for PLUG in $(git diff --name-only "$BASE" HEAD | sed -n 's#^plugins/\([^/]*\)/.*#\1#p' | sort -u); do
+            PJ="plugins/$PLUG/.claude-plugin/plugin.json"
+            [ -f "$PJ" ] || continue
+            OLD=$(git show "$BASE:$PJ" 2>/dev/null | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1)
+            NEW=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$PJ" | head -1)
+            if [ -n "$OLD" ] && [ "$OLD" = "$NEW" ]; then
+              echo "$PLUG changed but its version is still $OLD. Bump $PJ."; FAIL=1
+            fi
+          done
+          exit $FAIL

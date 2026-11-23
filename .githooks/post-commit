@@ -1,5 +1,6 @@
 #!/bin/sh
 # Land each commit on main through a merged pull request, in the background, so every surface pulls it.
+# The PR merges only after its GitHub check passes.
 # claude.ai and Cowork re-sync this marketplace only when a PR merges into main. A direct push never
 # reaches them (found October 6, 2026, after eight direct pushes left the desktop copy two days stale).
 # So the commit goes up on its own sync/ branch, gets a PR, and merges, and local main moves onto the
@@ -23,6 +24,13 @@ TITLE=$(git log -1 --format=%s | cut -c1-120)
   git push -q origin "$SHA:refs/heads/$B" &&
   URL=$("$GH" pr create -R "$REPO" --base main --head "$B" --title "$TITLE" \
         --body "Merged by .githooks/post-commit so claude.ai and Cowork re-sync the marketplace.") &&
+  # Merge only once the GitHub check (.github/workflows/checks.yml) passes. A private repo on the free
+  # plan can't require a check, so this wait is where it holds (November 23, 2026). A red or
+  # missing check leaves the PR open and lands here as a sync FAILED line and a Mac notification.
+  { i=0; until "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q . && \
+      ! "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q "no checks reported" || [ $i -ge 12 ]; do
+      sleep 5; i=$((i + 1)); done; } &&
+  "$GH" pr checks -R "$REPO" "$URL" --watch --fail-fast --interval 15 >/dev/null &&
   "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch &&
   git fetch -q origin main ||
   { echo "sync FAILED $(date '+%Y-%m-%d %H:%M:%S'): $(git rev-parse HEAD) (branch $B may still be on GitHub)"
