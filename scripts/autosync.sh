@@ -34,4 +34,16 @@ echo "$REPOS" | while read -r DIR MODE; do
     echo "$(date '+%F %T') commit stopped in $DIR, left uncommitted" >>"$LOG"
   fi
 done
+# Catch-up for a failed sync: a repo with its own .githooks/post-commit that is still ahead of GitHub,
+# with no sync running, gets that sync rerun, so a GitHub API blip heals at the end of the next turn.
+echo "$REPOS" | while read -r DIR MODE; do
+  [ "$MODE" = "push" ] && continue
+  [ -x "$DIR/.githooks/post-commit" ] || [ -f "$DIR/.githooks/post-commit" ] || continue
+  pgrep -f "githooks/post-commit" >/dev/null 2>&1 && continue
+  git -C "$DIR" fetch -q origin main 2>/dev/null
+  if [ "$(git -C "$DIR" rev-list --count origin/main..main 2>/dev/null || echo 0)" -gt 0 ]; then
+    (cd "$DIR" && sh .githooks/post-commit) >/dev/null 2>&1
+    echo "$(date '+%F %T') $DIR ahead of GitHub, reran its sync" >>"$LOG"
+  fi
+done
 exit 0

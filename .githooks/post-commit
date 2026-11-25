@@ -8,41 +8,54 @@
 # Main is merged in first, so a change that reached main from anywhere else (a claude.ai or cloud
 # session's own PR) is never left out of the local copy. On October 15 one was (PR #36), and the first
 # local edit to the same lines, on October 28, made every sync PR conflict for five days with the
-# failure written only to this log. A failed sync now also posts a Mac notification.
+# failure written only to this log. A sync that fails three attempts in a row posts a Mac notification.
 cd "$(git rev-parse --show-toplevel)" || exit 0
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
 GH=$(command -v gh || echo /opt/homebrew/bin/gh)
 REPO=$(git remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
 TITLE=$(git log -1 --format=%s | cut -c1-120)
 (
-  git fetch -q origin main &&
-  { git merge-base --is-ancestor origin/main HEAD ||
-    git -c user.name="$(git log -1 --format=%an)" -c user.email="$(git log -1 --format=%ae)" \
-      merge -q --no-edit origin/main ||
-    { git merge --abort; false; }; } &&
-  SHA=$(git rev-parse HEAD) && B="sync/$(git rev-parse --short HEAD)" &&
-  git push -q origin "$SHA:refs/heads/$B" &&
-  URL=$("$GH" pr create -R "$REPO" --base main --head "$B" --title "$TITLE" \
-        --body "Merged by .githooks/post-commit so claude.ai and Cowork re-sync the marketplace.") &&
-  # Merge only once the GitHub check (.github/workflows/checks.yml) passes (November 23, 2026). Branch
-  # protection on main also requires it where the plan allows. A red or missing check leaves the PR
-  # open and lands here as a sync FAILED line and a Mac notification.
-  { i=0; until "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q . && \
-      ! "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q "no checks reported" || [ $i -ge 12 ]; do
-      sleep 5; i=$((i + 1)); done; } &&
-  "$GH" pr checks -R "$REPO" "$URL" --watch --fail-fast --interval 15 >/dev/null &&
-  # GitHub can take a few seconds to mark the PR mergeable after the check turns green, and a protected
-  # main refuses the merge until it does (seen on November 23, 2026), so a refused merge gets one retry.
-  { "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch ||
-    { sleep 15; "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch; }; } &&
-  git fetch -q origin main ||
-  { echo "sync FAILED $(date '+%Y-%m-%d %H:%M:%S'): $(git rev-parse HEAD) (branch $B may still be on GitHub)"
-    osascript -e 'display notification "Sync to GitHub failed. Read .git/last-push.log." with title "claude-skills"' 2>/dev/null
-    exit 1; }
+  # One attempt: merge main in, push the sync branch, open (or reuse) its PR, wait for the check, merge.
+  attempt() {
+    git fetch -q origin main &&
+    { git merge-base --is-ancestor origin/main HEAD ||
+      git -c user.name="$(git log -1 --format=%an)" -c user.email="$(git log -1 --format=%ae)" \
+        merge -q --no-edit origin/main ||
+      { git merge --abort; false; }; } &&
+    SHA=$(git rev-parse HEAD) && B="sync/$(git rev-parse --short HEAD)" &&
+    git push -q origin "$SHA:refs/heads/$B" &&
+    # Reuse the branch's PR when an earlier attempt opened it.
+    { URL=$("$GH" pr view "$B" -R "$REPO" --json url,state -q 'select(.state=="OPEN") | .url' 2>/dev/null) && [ -n "$URL" ] ||
+      URL=$("$GH" pr create -R "$REPO" --base main --head "$B" --title "$TITLE" \
+            --body "Merged by .githooks/post-commit so claude.ai and Cowork re-sync the marketplace."); } &&
+    # Merge only once the GitHub check (.github/workflows/checks.yml) passes (November 23, 2026).
+    { i=0; until "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q . && \
+        ! "$GH" pr checks -R "$REPO" "$URL" 2>&1 | grep -q "no checks reported" || [ $i -ge 12 ]; do
+        sleep 5; i=$((i + 1)); done; } &&
+    "$GH" pr checks -R "$REPO" "$URL" --watch --fail-fast --interval 15 >/dev/null &&
+    # GitHub can take a few seconds to mark the PR mergeable after the check turns green (November 23, 2026).
+    { "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch ||
+      { sleep 15; "$GH" pr merge -R "$REPO" "$URL" --merge --delete-branch; }; } &&
+    git fetch -q origin main
+  }
+  # Three attempts a minute apart (November 25, 2026): GitHub's API errors now and then ("Something went
+  # wrong while executing your query" on pr create), and one blip used to fail the sync and post a
+  # notification. Only a failure that survives all three notifies, and the Stop hook in
+  # scripts/autosync.sh reruns this script after any turn while main is still ahead.
+  n=1
+  until attempt; do
+    [ $n -ge 3 ] && {
+      echo "sync FAILED $(date '+%Y-%m-%d %H:%M:%S'): $(git rev-parse HEAD) after 3 attempts (branch $B may still be on GitHub)"
+      echo "$(date '+%F %T') FAILED $(git rev-parse --short HEAD) after 3 attempts" >> .git/sync-history.log
+      osascript -e 'display notification "Sync failed 3 times, a session will retry at the end of its next turn. Details in .git/last-push.log." with title "claude-skills"' 2>/dev/null
+      exit 1; }
+    echo "attempt $n failed $(date '+%H:%M:%S'), retrying in 60s"; n=$((n + 1)); sleep 60
+  done
   # Fast-forward local main onto the merge commit when nothing else changed upstream (same tree).
   [ "$(git rev-parse HEAD)" = "$SHA" ] &&
     [ "$(git rev-parse 'origin/main^{tree}')" = "$(git rev-parse "$SHA^{tree}")" ] &&
     git update-ref refs/heads/main origin/main "$SHA"
   echo "merged $URL $(date '+%Y-%m-%d %H:%M:%S')"
+  echo "$(date '+%F %T') merged $URL (attempt $n)" >> .git/sync-history.log
 ) > .git/last-push.log 2>&1 &
 exit 0
