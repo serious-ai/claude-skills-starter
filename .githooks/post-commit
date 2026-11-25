@@ -15,6 +15,13 @@ GH=$(command -v gh || echo /opt/homebrew/bin/gh)
 REPO=$(git remote get-url origin | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
 TITLE=$(git log -1 --format=%s | cut -c1-120)
 (
+  # One sync at a time (November 25, 2026): overlapping syncs raced to merge and each one that lost
+  # reported a failure. A newer commit waiting behind a running sync is picked up by the turn-end rerun.
+  mkdir .git/sync.lock 2>/dev/null || {
+    P=$(cat .git/sync.lock/pid 2>/dev/null)
+    if [ -n "$P" ] && kill -0 "$P" 2>/dev/null; then echo "another sync is running (pid $P), leaving it"; exit 0; fi
+    rm -rf .git/sync.lock; mkdir .git/sync.lock 2>/dev/null || exit 0; }
+  sh -c 'echo $PPID' > .git/sync.lock/pid; trap 'rm -rf .git/sync.lock' EXIT
   # One attempt: merge main in, push the sync branch, open (or reuse) its PR, wait for the check, merge.
   attempt() {
     git fetch -q origin main &&
@@ -44,6 +51,9 @@ TITLE=$(git log -1 --format=%s | cut -c1-120)
   # scripts/autosync.sh reruns this script after any turn while main is still ahead.
   n=1
   until attempt; do
+    # Work already on GitHub's main (another sync merged it) is done, not failed.
+    git fetch -q origin main 2>/dev/null && git merge-base --is-ancestor HEAD origin/main && {
+      echo "already on main $(date '+%Y-%m-%d %H:%M:%S')"; exit 0; }
     [ $n -ge 3 ] && {
       echo "sync FAILED $(date '+%Y-%m-%d %H:%M:%S'): $(git rev-parse HEAD) after 3 attempts (branch $B may still be on GitHub)"
       echo "$(date '+%F %T') FAILED $(git rev-parse --short HEAD) after 3 attempts" >> .git/sync-history.log
